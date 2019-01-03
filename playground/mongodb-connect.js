@@ -1,5 +1,5 @@
 // const MongoClient = require('mongodb').MongoClient
-const { MongoClient, ObjectID } = require('mongodb')
+const { MongoClient } = require('mongodb')
 
 // let obj = new ObjectID()
 
@@ -40,13 +40,28 @@ MongoClient.connect('mongodb://localhost:27017/TodoApp', { useNewUrlParser: true
   //   })
 
   // Fetching queried data from db in array format as promise(THENABLE)
-  db.collection('Todos').find({ completed: true }).toArray()
-    .then(docs => {
-      console.log('Completed Todos')
-      console.log(JSON.stringify(docs, undefined, 2))
-    }, err => {
-      console.log('Unable to fetch data', err)
-    })
+  // db.collection('Todos').find({ completed: true }).toArray()
+  //   .then(docs => {
+  //     console.log('Completed Todos')
+  //     console.log(JSON.stringify(docs, undefined, 2))
+  //   }, err => {
+  //     console.log('Unable to fetch data', err)
+  //   })
+
+  // Update one document todo doc to completed as true
+  // db.collection('Todos').findOneAndUpdate({
+  //   completed: false
+  // }, {
+  //   $set: { completed: true }
+  // }, {
+  //   returnOriginal: false
+  // }).then(res => console.log(JSON.stringify(res, undefined, 2)))
+
+  db.collection('Users').updateMany({}, {
+    $inc: { age: 1 }
+  }, {
+    returnOriginal: false
+  }).then(res => console.log(JSON.stringify(res, undefined, 2)))
 
   client.close()
-});
+})
