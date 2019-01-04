@@ -7,8 +7,10 @@ const { User } = require('./models/user')
 
 let app = express()
 
+// Midleware to parse request body
 app.use(bodyParser.json())
 
+// POST method to routo '/todos' to add a todo
 app.post('/todos', (req, res) => {
   let todo = new Todo({
     text: req.body.text
@@ -19,6 +21,17 @@ app.post('/todos', (req, res) => {
   }, err => {
     res.status(400).send(err)
   })
+})
+
+// GET method to route '/todos' to get all todos
+app.get('/todos', (req, res) => {
+  Todo.find()
+    .then(todos => {
+      res.send({ todos })
+    })
+    .catch(e => {
+      res.status(400).send(e)
+    })
 })
 
 app.listen(3000, () => {
