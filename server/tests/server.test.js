@@ -4,6 +4,7 @@ const request = require('supertest')
 
 const { app } = require('./../server')
 const { Todo } = require('./../models/todo')
+const { User } = require('./../models/user')
 
 const dummyTodos = [{
   text: 'Fisrt dummy todo'
@@ -65,5 +66,43 @@ describe('GET /todos', () => {
         expect(res.body.todos.length).toBe(2)
       })
       .end(done)
+  })
+})
+
+describe('GET /user/:id', () => {
+  let email = 'dummy_user@dummy.com'
+  let id = ''
+
+  before(done => {
+    User.create({ email })
+      .then(() => {
+        return User.findOne({ email })
+      })
+      .then(doc => {
+        id = String(doc._id)
+        done()
+      })
+  })
+
+  it('should get dummy user', done => {
+    request(app)
+      .get(`/todos/${id}`)
+      .expect(200)
+      .expect(res => {
+        expect(res.body['_id']).toBe(id)
+      })
+      .end(done)
+  })
+
+  it('should not get wrong user', done => {
+    request(app)
+      .get(`/todos/${id + 1}`)
+      .expect(404)
+      .end(done)
+  })
+
+  after(done => {
+    User.findOneAndDelete({ email })
+      .then(() => done())
   })
 })
