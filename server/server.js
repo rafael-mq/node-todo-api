@@ -1,16 +1,18 @@
 const express = require('express')
 const bodyParser = require('body-parser')
+const { ObjectID } = require('mongodb')
 
 const { mongoose } = require('./db/mongoose')
 const { Todo } = require('./models/todo')
-const { User } = require('./models/user')
+// const { User } = require('./models/user')
 
+let port = 3000
 let app = express()
 
 // Midleware to parse request body
 app.use(bodyParser.json())
 
-// POST method to routo '/todos' to add a todo
+// POST method to route '/todos' to add a todo
 app.post('/todos', (req, res) => {
   let todo = new Todo({
     text: req.body.text
@@ -37,15 +39,22 @@ app.get('/todos', (req, res) => {
 // GET method to retrieve a user by its ID
 app.get('/todos/:id', (req, res) => {
   let id = req.params.id
-  User.findById(id).then(doc => {
-    res.json(doc)
-  }, () => {
-    res.status(404).json({ error: 'Couldn\'t find user' })
-  }).catch(e => console.log(e))
+
+  if (!ObjectID.isValid(id)) {
+    res.status(400).json({ error: 'Invalid ID' })
+  } else {
+    Todo.findById(id).then(doc => {
+      if (!doc) {
+        res.status(404).json({ error: 'Couldn\'t find todo' })
+      } else {
+        res.json({ todo: doc })
+      }
+    }).catch(e => console.log(e))
+  }
 })
 
-app.listen(3000, () => {
-  console.log(`Server listening on port 3000...`)
+app.listen(port, () => {
+  console.log(`Server listening on port ${port}...`)
 })
 
 module.exports = { app }

@@ -4,21 +4,26 @@ const request = require('supertest')
 
 const { app } = require('./../server')
 const { Todo } = require('./../models/todo')
-const { User } = require('./../models/user')
+
+const id1 = '5c338876ac29761e705e8d10'
+const id2 = '5c338876ac29761e705e8d11'
+const wrongId = '5c338876ac29761e705e8d12'
 
 const dummyTodos = [{
-  text: 'Fisrt dummy todo'
+  text: 'Fisrt dummy todo',
+  _id: id1
 }, {
-  text: 'Second dummy todo'
+  text: 'Second dummy todo',
+  _id: id2
 }]
 
-beforeEach(done => {
-  Todo.deleteMany({}).then(() => {
-    return Todo.insertMany(dummyTodos)
-  }).then(() => done())
-})
-
 describe('POST /todos', () => {
+  beforeEach(done => {
+    Todo.deleteMany({}).then(() => {
+      return Todo.insertMany(dummyTodos)
+    }).then(() => done())
+  })
+
   it('should create a new todo', done => {
     let text = 'Some todo text'
 
@@ -47,7 +52,7 @@ describe('POST /todos', () => {
       .post('/todos')
       .send({})
       .expect(400)
-      .end((err, res) => {
+      .end((err) => {
         if (err) { return done(err) }
         Todo.find().then(todos => {
           expect(todos.length).toBe(2)
@@ -69,40 +74,32 @@ describe('GET /todos', () => {
   })
 })
 
-describe('GET /user/:id', () => {
-  let email = 'dummy_user@dummy.com'
-  let id = ''
-
-  before(done => {
-    User.create({ email })
-      .then(() => {
-        return User.findOne({ email })
-      })
-      .then(doc => {
-        id = String(doc._id)
-        done()
-      })
-  })
-
-  it('should get dummy user', done => {
+describe('GET /todo/:id', () => {
+  it('should get dummy todo', done => {
     request(app)
-      .get(`/todos/${id}`)
+      .get(`/todos/${id1}`)
       .expect(200)
       .expect(res => {
-        expect(res.body['_id']).toBe(id)
+        expect(res.body.todo).toBeDefined()
       })
       .end(done)
   })
 
-  it('should not get wrong user', done => {
+  it('should inform invalid id with 400 status', done => {
+    let invalidId = id1 + '1'
     request(app)
-      .get(`/todos/${id + 1}`)
-      .expect(404)
+      .get(`/todos/${invalidId}`)
+      .expect(400)
+      .expect(res => {
+        expect(res.body.error).toBe('Invalid ID')
+      })
       .end(done)
   })
 
-  after(done => {
-    User.findOneAndDelete({ email })
-      .then(() => done())
+  it('should not get to for unexisting id with 404 status', done => {
+    request(app)
+      .get(`/todos/${wrongId}`)
+      .expect(404)
+      .end(done)
   })
 })
