@@ -6,7 +6,7 @@ const { mongoose } = require('./db/mongoose')
 const { Todo } = require('./models/todo')
 // const { User } = require('./models/user')
 
-let port = 3000
+let port = process.env.PORT || 3000
 let app = express()
 
 // Midleware to parse request body
