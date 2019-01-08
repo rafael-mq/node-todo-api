@@ -6,7 +6,7 @@ const { mongoose } = require('./db/mongoose')
 const { Todo } = require('./models/todo')
 // const { User } = require('./models/user')
 
-let port = process.env.PORT || 3000
+const port = process.env.PORT || 3000
 let app = express()
 
 // Midleware to parse request body
@@ -36,7 +36,7 @@ app.get('/todos', (req, res) => {
     })
 })
 
-// GET method to retrieve a user by its ID
+// GET method to retrieve a todo by its ID
 app.get('/todos/:id', (req, res) => {
   let id = req.params.id
 
@@ -48,6 +48,23 @@ app.get('/todos/:id', (req, res) => {
         res.status(404).json({ error: 'Couldn\'t find todo' })
       } else {
         res.json({ todo: doc })
+      }
+    }).catch(e => console.log(e))
+  }
+})
+
+// DELETE method to remove a todo from db by its ID
+app.delete('/todos/:id', (req, res) => {
+  let id = req.params.id
+
+  if (!ObjectID.isValid(id)) {
+    res.status(400).json({ error: 'Invalid ID' })
+  } else {
+    Todo.findByIdAndRemove(id).then(doc => {
+      if (!doc) {
+        res.status(404).json({ error: 'Couldn\'t find todo' })
+      } else {
+        res.json({ removed: doc })
       }
     }).catch(e => console.log(e))
   }
