@@ -112,14 +112,8 @@ describe('DELETE /todo/:id', () => {
     _id: idDelete
   })
 
-  beforeEach('create a todo to be deleted', done => {
+  before('create a todo to be deleted', done => {
     anotherDummy.save()
-      .then(() => done(), e => done(e))
-      .catch(e => done(e))
-  })
-
-  after('delete dummy todo', done => {
-    Todo.findByIdAndDelete(idDelete.toHexString())
       .then(() => done(), e => done(e))
       .catch(e => done(e))
   })
@@ -134,10 +128,17 @@ describe('DELETE /todo/:id', () => {
       .end(done)
   })
 
+  it('should not find removed todo', done => {
+    request(app)
+      .get(`/todos/${idDelete.toHexString()}`)
+      .expect(404)
+      .end(done)
+  })
+
   it('should inform invalid id with 400 status', done => {
     let invalidId = idDelete + '1'
     request(app)
-      .get(`/todos/${invalidId}`)
+      .delete(`/todos/${invalidId}`)
       .expect(400)
       .expect(res => {
         expect(res.body.error).toBe('Invalid ID')
@@ -147,8 +148,67 @@ describe('DELETE /todo/:id', () => {
 
   it('should not get todo for unexisting id with 404 status', done => {
     request(app)
-      .get(`/todos/${wrongId}`)
+      .delete(`/todos/${wrongId}`)
       .expect(404)
       .end(done)
+  })
+})
+
+describe('PATCH /todos/:id', () => {
+  let idUpdate = new ObjectID()
+  let updtDummy = new Todo({
+    text: 'a todo which will be updated',
+    _id: idUpdate
+  })
+
+  before('create a todo to be updated', done => {
+    updtDummy.save()
+      .then(() => done(), e => done(e))
+      .catch(e => done(e))
+  })
+
+  it('should correctly update dummy todo', done => {
+    request(app)
+      .patch(`/todos/${idUpdate.toHexString()}`)
+      .send({ todo: { text: 'an updated todo' } })
+      .expect(200)
+      .expect(res => {
+        expect(res.body).not.toBe(null)
+      })
+      .end((err) => {
+        if (err) { return done(err) }
+        Todo.findOne({ text: 'an updated todo' })
+          .then(todo => {
+            expect(todo.text).toBe('an updated todo')
+            done()
+          })
+          .catch(e => done(e))
+      })
+  })
+
+  it('should inform invalid id with 400 status', done => {
+    let invalidId = idUpdate.toHexString() + '1'
+    request(app)
+      .patch(`/todos/${invalidId}`)
+      .send({ todo: { text: 'an updated todo' } })
+      .expect(400)
+      .expect(res => {
+        expect(res.body.error).toBe('Invalid ID')
+      })
+      .end(done)
+  })
+
+  it('should not get todo for unexisting id with 404 status', done => {
+    request(app)
+      .patch(`/todos/${wrongId}`)
+      .send({ todo: { text: 'an updated todo' } })
+      .expect(404)
+      .end(done)
+  })
+
+  after('delete updated todo', done => {
+    Todo.findByIdAndRemove(idUpdate)
+      .then(() => done(), e => done(e))
+      .catch(e => done(e))
   })
 })

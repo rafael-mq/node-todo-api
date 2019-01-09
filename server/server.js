@@ -2,6 +2,7 @@ const express = require('express')
 const bodyParser = require('body-parser')
 const { ObjectID } = require('mongodb')
 
+// eslint-disable-next-line no-unused-vars
 const { mongoose } = require('./db/mongoose')
 const { Todo } = require('./models/todo')
 // const { User } = require('./models/user')
@@ -67,6 +68,39 @@ app.delete('/todos/:id', (req, res) => {
         res.json({ removed: doc })
       }
     }).catch(e => console.log(e))
+  }
+})
+
+// PATCH method to update a todo by its ID
+app.patch('/todos/:id', (req, res) => {
+  let id = req.params.id
+  let todo = req.body.todo
+
+  if (!ObjectID.isValid(id)) {
+    return res.status(400).json({ error: 'Invalid ID' })
+  } else {
+    // Set completedAt Date if completed has been set
+    if (todo.hasOwnProperty('completed')) {
+      if (todo.completed) {
+        todo.completedAt = new Date().getTime()
+      }
+    } else {
+      todo.completed = false
+      todo.completedAt = null
+    }
+
+    Todo.findByIdAndUpdate(id, { $set: todo }, { new: true })
+      .then(doc => {
+        if (!doc) {
+          res.status(404).json({ error: 'Couldn\'t find todo' })
+        } else {
+          res.json({ updated: doc })
+        }
+      })
+      .catch(e => {
+        console.log(e)
+        res.status(400).json({ error: 'Bad Request' })
+      })
   }
 })
 
