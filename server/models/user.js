@@ -53,6 +53,25 @@ UserSchema.methods.generateAuthToken = function () {
     })
 }
 
+UserSchema.statics.findByToken = function (token) {
+  // Return query promise
+  let User = this
+  // eslint-disable-next-line no-unused-vars
+  let decoded
+
+  try {
+    decoded = jwt.verify(token, 'caju123')
+  } catch (error) {
+    return Promise.reject(error)
+  }
+
+  return User.findOne({
+    '_id': decoded._id,
+    'tokens.token': token,
+    'tokens.access': 'auth'
+  })
+}
+
 var User = mongoose.model('User', UserSchema)
 
 module.exports = { User }
