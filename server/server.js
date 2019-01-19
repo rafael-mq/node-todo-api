@@ -6,7 +6,7 @@ const { ObjectID } = require('mongodb')
 // eslint-disable-next-line no-unused-vars
 const { mongoose } = require('./db/mongoose')
 const { Todo } = require('./models/todo')
-// const { User } = require('./models/user')
+const { User } = require('./models/user')
 
 const port = process.env.PORT
 let app = express()
@@ -103,6 +103,25 @@ app.patch('/todos/:id', (req, res) => {
         res.status(400).json({ error: 'Bad Request' })
       })
   }
+})
+
+// POST method to input new user
+app.post('/users', (req, res) => {
+  let { email, password } = req.body
+  let user = new User({
+    email,
+    password
+  })
+
+  user.save()
+    .then(() => {
+      return user.generateAuthToken()
+    })
+    .then((token) => {
+      // console.log('Headed token: ', token)
+      res.header('x-auth', token).send(user)
+    })
+    .catch(e => res.status(404).send(e))
 })
 
 app.listen(port, () => {
