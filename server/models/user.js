@@ -1,3 +1,4 @@
+/* eslint-disable handle-callback-err */
 const mongoose = require('mongoose')
 const validator = require('validator')
 const jwt = require('jsonwebtoken')
@@ -44,7 +45,7 @@ UserSchema.methods.toJSON = function () {
 UserSchema.methods.generateAuthToken = function () {
   var user = this
   var access = 'auth'
-  var token = jwt.sign({ _id: user._id.toHexString(), access }, 'caju123').toString()
+  var token = jwt.sign({ _id: user._id, access }, 'caju123').toString()
 
   // console.log('Created token: ', token)
   user.tokens.push({ token, access })
@@ -76,21 +77,22 @@ UserSchema.statics.findByToken = function (token) {
   })
 }
 
+// Middleware to hash passwords
 UserSchema.pre('save', function (next) {
+  // LOG: console.log('Pre save hook executed')
   let user = this
 
   if (user.isModified('password')) {
-    bcrypt.genSalt(10)
-      .then(salt => {
-        return bcrypt.hash(user.password, salt)
-      })
-      .then(hash => {
+    // LOG: console.log('Is modified worked: ', user.password)
+    bcrypt.genSalt(10, (err, salt) => {
+      bcrypt.hash(user.password, salt, (err, hash) => {
         user.password = hash
+        next()
       })
-      .catch(e => console.log(e))
+    })
+  } else {
+    next()
   }
-
-  next()
 })
 
 var User = mongoose.model('User', UserSchema)

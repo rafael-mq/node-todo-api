@@ -116,13 +116,12 @@ app.post('/users', (req, res) => {
 
   user.save()
     .then(() => {
+      // console.log('user being saved')
       return user.generateAuthToken()
     })
     .then((token) => {
-      // console.log('Headed token: ', token)
-      res.header('x-auth', token).send(user)
-    })
-    .catch(e => res.status(404).send(e))
+      return res.header('x-auth', token).send(user.toJSON())
+    }, e => res.status(400).send(e))
 })
 
 app.get('/users/me', authenticate, (req, res) => {
