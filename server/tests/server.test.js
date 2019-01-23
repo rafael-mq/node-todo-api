@@ -274,4 +274,61 @@ describe('********** USERS tests **********', function () {
         .end(done)
     })
   })
+
+  describe('POST /users/login', () => {
+    it('should get existing user', done => {
+      request(app)
+        .post('/users/login')
+        .send({
+          email: dummyUsers[0].email,
+          password: dummyUsers[0].password
+        })
+        .expect(200)
+        .expect(res => {
+          expect(res.headers['x-auth']).toBeTruthy()
+        })
+        .expect(res => {
+          expect(res.body.email).toBe(dummyUsers[0].email)
+          expect(res.body._id).toBe(dummyUsers[0]._id.toHexString())
+        })
+        .end((err, res) => {
+          if (err) { return done(err) }
+
+          User.findById(dummyUsers[0]._id)
+            .then(user => {
+              expect(user.tokens[1].token).toBe(res.headers['x-auth'])
+              done()
+            })
+            .catch(e => done(e))
+        })
+    })
+
+    it('should respond 404 for unexisting email', done => {
+      request(app)
+        .post('/users/login')
+        .send({
+          email: 'a' + dummyUsers[0].email,
+          password: dummyUsers[0].password
+        })
+        .expect(404)
+        .expect(res => {
+          expect(res.body.error).toBe('User not found')
+        })
+        .end(done)
+    })
+
+    it('should respond 404 for incorrect password', done => {
+      request(app)
+        .post('/users/login')
+        .send({
+          email: dummyUsers[0].email,
+          password: dummyUsers[0].password + 'x'
+        })
+        .expect(404)
+        .expect(res => {
+          expect(res.body.error).toBe('Incorrect Password')
+        })
+        .end(done)
+    })
+  })
 })
