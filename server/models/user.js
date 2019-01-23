@@ -77,6 +77,27 @@ UserSchema.statics.findByToken = function (token) {
   })
 }
 
+// Class method to query a user by email and check password informed
+UserSchema.statics.findByCredentials = function (email, password) {
+  let User = this
+
+  return User.findOne({ email })
+    .then(user => {
+      if (!user) {
+        return Promise.reject(new Error('User not found'))
+      }
+
+      return bcrypt.compare(password, user.password)
+        .then(check => {
+          if (check) {
+            return user
+          } else {
+            return Promise.reject(new Error('Incorrect Password'))
+          }
+        })
+    })
+}
+
 // Middleware to hash passwords
 UserSchema.pre('save', function (next) {
   // LOG: console.log('Pre save hook executed')

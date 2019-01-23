@@ -124,8 +124,27 @@ app.post('/users', (req, res) => {
     }, e => res.status(400).send(e))
 })
 
+// GET method to get authenticated user by token sent in header x-auth
 app.get('/users/me', authenticate, (req, res) => {
   res.send(req.user)
+})
+
+// POST method to login user by its email and password
+app.post('/users/login', (req, res) => {
+  let { email, password } = req.body
+
+  // Model method to query user by email if the password matches
+  User.findByCredentials(email, password)
+    .then(user => {
+    // console.log('user being saved')
+      return user.generateAuthToken()
+        .then((token) => {
+          return res.header('x-auth', token).send(user.toJSON())
+        }, e => res.status(400).send(e))
+    })
+    .catch(e => {
+      res.status(404).json({ error: e.message })
+    })
 })
 
 app.listen(port, () => {
