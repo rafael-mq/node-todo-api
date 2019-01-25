@@ -6,16 +6,18 @@ const { User } = require('./../../models/user')
 const id1 = new ObjectID()
 const id2 = new ObjectID()
 
-const dummyTodos = [{
-  text: 'Fisrt dummy todo',
-  _id: id1
-}, {
-  text: 'Second dummy todo',
-  _id: id2
-}]
-
 const userOneId = new ObjectID()
 const userTwoId = new ObjectID()
+
+const dummyTodos = [{
+  text: 'Fisrt dummy todo',
+  _id: id1,
+  _creator: userOneId
+}, {
+  text: 'Second dummy todo',
+  _id: id2,
+  _creator: userTwoId
+}]
 
 const laura = {
   _id: userTwoId,

@@ -17,6 +17,7 @@ describe('********** TODOS tests **********', function () {
   const wrongId = '5c338876ac29761e705e8d09'
   this.timeout(10000)
 
+  before(populateUsers)
   before(populateTodos)
 
   describe('POST /todos', () => {
@@ -25,6 +26,7 @@ describe('********** TODOS tests **********', function () {
     it('should create a new todo', done => {
       request(app)
         .post('/todos')
+        .set('x-auth', dummyUsers[0].tokens[0].token)
         .send({ text })
         .expect(200)
         .expect(res => {
@@ -36,6 +38,7 @@ describe('********** TODOS tests **********', function () {
     it('should not create todo with invalid body data', done => {
       request(app)
         .post('/todos')
+        .set('x-auth', dummyUsers[0].tokens[0].token)
         .send({})
         .expect(400)
         .end(done)
@@ -50,12 +53,13 @@ describe('********** TODOS tests **********', function () {
   })
 
   describe('GET /todos', () => {
-    it('should get all todos', done => {
+    it('should get all todos for user one', done => {
       request(app)
         .get('/todos')
+        .set('x-auth', dummyUsers[0].tokens[0].token)
         .expect(200)
         .expect(res => {
-          expect(res.body.todos.length).toBe(2)
+          expect(res.body.todos.length).toBe(1)
         })
         .end(done)
     })
@@ -65,6 +69,7 @@ describe('********** TODOS tests **********', function () {
     it('should get dummy todo', done => {
       request(app)
         .get(`/todos/${dummyTodos[0]._id.toHexString()}`)
+        .set('x-auth', dummyUsers[0].tokens[0].token)
         .expect(200)
         .expect(res => {
           expect(res.body.todo.text).toBe(dummyTodos[0].text)
@@ -76,6 +81,7 @@ describe('********** TODOS tests **********', function () {
       let invalidId = dummyTodos[0]._id.toHexString() + '1'
       request(app)
         .get(`/todos/${invalidId}`)
+        .set('x-auth', dummyUsers[0].tokens[0].token)
         .expect(400)
         .expect(res => {
           expect(res.body.error).toBe('Invalid ID')
@@ -86,6 +92,7 @@ describe('********** TODOS tests **********', function () {
     it('should not get todo for unexisting id with 404 status', done => {
       request(app)
         .get(`/todos/${wrongId}`)
+        .set('x-auth', dummyUsers[0].tokens[0].token)
         .expect(404)
         .end(done)
     })
@@ -95,7 +102,8 @@ describe('********** TODOS tests **********', function () {
     let idDelete = new ObjectID()
     let anotherDummy = new Todo({
       text: 'a todo to be deleted',
-      _id: idDelete
+      _id: idDelete,
+      _creator: dummyUsers[0]._id
     })
 
     before('create a todo to be deleted', done => {
@@ -107,6 +115,7 @@ describe('********** TODOS tests **********', function () {
     it('should remove dummy todo', done => {
       request(app)
         .delete(`/todos/${idDelete.toHexString()}`)
+        .set('x-auth', dummyUsers[0].tokens[0].token)
         .expect(200)
         .expect(res => {
           expect(res.body.removed.text).toBe(anotherDummy.text)
@@ -117,6 +126,7 @@ describe('********** TODOS tests **********', function () {
     it('should not find removed todo', done => {
       request(app)
         .get(`/todos/${idDelete.toHexString()}`)
+        .set('x-auth', dummyUsers[0].tokens[0].token)
         .expect(404)
         .end(done)
     })
@@ -125,6 +135,7 @@ describe('********** TODOS tests **********', function () {
       let invalidId = idDelete + '1'
       request(app)
         .delete(`/todos/${invalidId}`)
+        .set('x-auth', dummyUsers[0].tokens[0].token)
         .expect(400)
         .expect(res => {
           expect(res.body.error).toBe('Invalid ID')
@@ -135,6 +146,7 @@ describe('********** TODOS tests **********', function () {
     it('should not get todo for unexisting id with 404 status', done => {
       request(app)
         .delete(`/todos/${wrongId}`)
+        .set('x-auth', dummyUsers[0].tokens[0].token)
         .expect(404)
         .end(done)
     })
@@ -144,7 +156,8 @@ describe('********** TODOS tests **********', function () {
     let idUpdate = new ObjectID()
     let updtDummy = new Todo({
       text: 'a todo which will be updated',
-      _id: idUpdate
+      _id: idUpdate,
+      _creator: dummyUsers[0]._id
     })
 
     before('create a todo to be updated', done => {
@@ -156,6 +169,7 @@ describe('********** TODOS tests **********', function () {
     it('should correctly update dummy todo', done => {
       request(app)
         .patch(`/todos/${idUpdate.toHexString()}`)
+        .set('x-auth', dummyUsers[0].tokens[0].token)
         .send({ todo: { text: 'an updated todo' } })
         .expect(200)
         .expect(res => {
@@ -163,7 +177,10 @@ describe('********** TODOS tests **********', function () {
         })
         .end((err) => {
           if (err) { return done(err) }
-          Todo.findOne({ text: 'an updated todo' })
+          Todo.findOne({
+            _creator: dummyUsers[0]._id,
+            text: 'an updated todo'
+          })
             .then(todo => {
               expect(todo.text).toBe('an updated todo')
               done()
@@ -176,6 +193,7 @@ describe('********** TODOS tests **********', function () {
       let invalidId = idUpdate.toHexString() + '1'
       request(app)
         .patch(`/todos/${invalidId}`)
+        .set('x-auth', dummyUsers[0].tokens[0].token)
         .send({ todo: { text: 'an updated todo' } })
         .expect(400)
         .expect(res => {
@@ -187,13 +205,17 @@ describe('********** TODOS tests **********', function () {
     it('should not get todo for unexisting id with 404 status', done => {
       request(app)
         .patch(`/todos/${wrongId}`)
+        .set('x-auth', dummyUsers[0].tokens[0].token)
         .send({ todo: { text: 'an updated todo' } })
         .expect(404)
         .end(done)
     })
 
     after('delete updated todo', done => {
-      Todo.findByIdAndRemove(idUpdate)
+      Todo.findOneAndRemove({
+        _id: idUpdate,
+        _creator: dummyUsers[0]._id
+      })
         .then(() => done(), e => done(e))
         .catch(e => done(e))
     })
@@ -202,8 +224,7 @@ describe('********** TODOS tests **********', function () {
 
 describe('********** USERS tests **********', function () {
   // this.timeout('5s')
-
-  before('Preparing for users tests', populateUsers)
+  let tokenUserTwo = ''
 
   describe('POST /users', () => {
     let email = 'postUser@node.com'
@@ -276,27 +297,28 @@ describe('********** USERS tests **********', function () {
   })
 
   describe('POST /users/login', () => {
-    it('should get existing user', done => {
+    it('should login existing user', done => {
       request(app)
         .post('/users/login')
         .send({
-          email: dummyUsers[0].email,
-          password: dummyUsers[0].password
+          email: dummyUsers[1].email,
+          password: dummyUsers[1].password
         })
         .expect(200)
         .expect(res => {
           expect(res.headers['x-auth']).toBeTruthy()
         })
         .expect(res => {
-          expect(res.body.email).toBe(dummyUsers[0].email)
-          expect(res.body._id).toBe(dummyUsers[0]._id.toHexString())
+          expect(res.body.email).toBe(dummyUsers[1].email)
+          expect(res.body._id).toBe(dummyUsers[1]._id.toHexString())
         })
         .end((err, res) => {
           if (err) { return done(err) }
 
-          User.findById(dummyUsers[0]._id)
+          User.findById(dummyUsers[1]._id)
             .then(user => {
-              expect(user.tokens[1].token).toBe(res.headers['x-auth'])
+              tokenUserTwo = user.tokens[0].token
+              expect(tokenUserTwo).toBe(res.headers['x-auth'])
               done()
             })
             .catch(e => done(e))
@@ -307,8 +329,8 @@ describe('********** USERS tests **********', function () {
       request(app)
         .post('/users/login')
         .send({
-          email: 'a' + dummyUsers[0].email,
-          password: dummyUsers[0].password
+          email: 'a' + dummyUsers[1].email,
+          password: dummyUsers[1].password
         })
         .expect(404)
         .expect(res => {
@@ -321,13 +343,47 @@ describe('********** USERS tests **********', function () {
       request(app)
         .post('/users/login')
         .send({
-          email: dummyUsers[0].email,
-          password: dummyUsers[0].password + 'x'
+          email: dummyUsers[1].email,
+          password: dummyUsers[1].password + 'x'
         })
         .expect(404)
         .expect(res => {
           expect(res.body.error).toBe('Incorrect Password')
         })
+        .end(done)
+    })
+  })
+
+  describe('DELETE /users/me/token', () => {
+    it('should respond 401 to remove invalid token', done => {
+      request(app)
+        .delete('/users/me/token')
+        .set('x-auth', tokenUserTwo + 'a')
+        .expect(401)
+        .end(done)
+    })
+
+    it('should remove auth token on logout', done => {
+      request(app)
+        .delete('/users/me/token')
+        .set('x-auth', tokenUserTwo)
+        .expect(200)
+        .end((err) => {
+          if (err) { done(err) }
+
+          User.findById(dummyUsers[1]._id)
+            .then(user => {
+              expect(user.tokens.length).toBe(0)
+              done()
+            })
+        })
+    })
+
+    it('should respond 401 to remove unexisting token', done => {
+      request(app)
+        .delete('/users/me/token')
+        .set('x-auth', tokenUserTwo)
+        .expect(401)
         .end(done)
     })
   })

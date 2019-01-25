@@ -47,14 +47,28 @@ UserSchema.methods.generateAuthToken = function () {
   var access = 'auth'
   var token = jwt.sign({ _id: user._id, access }, 'caju123').toString()
 
-  // console.log('Created token: ', token)
-  user.tokens.push({ token, access })
+  // TODO: avoid token reinsertion
+  if (user.tokens.length < 1) {
+    user.tokens.push({ token, access })
+  }
 
   // user.save returns a promise so we return it to promise-chain it afterwards
   return user.save()
     .then(() => {
-      return token
+      return user.tokens[0].token
     })
+}
+
+// Instance method to remove passed token
+UserSchema.methods.removeToken = function (token) {
+  var user = this
+
+  return user.updateOne({
+    // this will remove array element
+    $pull: {
+      tokens: { token }
+    }
+  })
 }
 
 // Class method to query a user from db by its token
